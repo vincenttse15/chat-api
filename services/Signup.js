@@ -1,16 +1,7 @@
 import bcrypt from 'bcryptjs';
+import { sessionResponse, createSession } from './Session.js';
 
-function response(status, cookie, message) {
-  const response = {
-    success: status,
-    cookie,
-    message,
-  }
-
-  return response;
-}
-
-function createUser(res, body, db) {
+function createUser(req, res, body, db) {
   bcrypt.genSalt(10, function(err, salt) {
     bcrypt.hash(body.password, salt, function(err, hash) {
       const user = {
@@ -23,20 +14,20 @@ function createUser(res, body, db) {
 
       db.collection('users')
         .insertOne(user)
-        .then((inserted) => console.log(inserted))
-        .catch(() => res.send(false, '', 'Sorry, there was an error creating your account.'));
+        .then((inserted) => createSession(req, res, inserted))
+        .catch(() => res.send(sessionResponse(false, '', 'Sorry, there was an error creating your account.')));
     })
   });
 }
 
-export const signup = (res, body, db) => {
+export const signup = (req, res, body, db) => {
   db.collection('users')
     .findOne({email: body.email})
     .then((user) => {
-      if (user) res.send(response(false, '', 'Email is already registered.'));
-      else createUser(res, body, db);
+      if (user) res.send(sessionResponse(false, '', 'Email is already registered.'));
+      else createUser(req, res, body, db);
     })
     .catch(() => {
-      res.send(response(false, '', 'Email is already registered.'));
+      res.send(sessionResponse(false, '', 'Email is already registered.'));
     });
 };

@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { MongoClient } from 'mongodb';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
+import { getUser } from './services/User.js';
 
 dotenv.config();
 
@@ -19,12 +20,13 @@ app.use(express.json());
 app.use(cors());
 app.use(session({
   secret: process.env.SECRET,
-  saveUninitialized: true,
+  saveUninitialized: false,
   resave: false,
   store: MongoStore.create({
     mongoUrl: db_url,
     dbName: dbName,
-    ttl: 7 * 24 * 60 * 60,
+    ttl: 14 * 24 * 60 * 60,
+    stringify: false,
   })
 }));
 
@@ -39,8 +41,18 @@ client.connect((error) => {
       password: req.body.password,
     };
   
-    signup(res, body, db);
+    signup(req, res, body, db);
   }); 
+
+  app.get('/getUser', (req, res) => {
+    const { cookie } = req.query;
+    if (cookie !== undefined && cookie !== '') {
+      getUser(res, cookie, db);
+    } else {
+      console.log('false')
+      res.send({});
+    }
+  });
   
   app.listen(port, () => {
     console.log(`server start at port ${port}`);
