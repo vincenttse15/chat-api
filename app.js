@@ -6,6 +6,7 @@ import { MongoClient } from 'mongodb';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
 import { getUser } from './services/User.js';
+import { logout } from './services/Logout.js';
 
 dotenv.config();
 
@@ -42,14 +43,19 @@ client.connect((error) => {
     };
   
     signup(req, res, body, db);
-  }); 
+  });
+  
+  app.post('/logout', (req, res) => {
+    const { sessionId } = req.body;
+
+    logout(res, sessionId, db);
+  });
 
   app.get('/getUser', (req, res) => {
     const { cookie } = req.query;
     if (cookie !== undefined && cookie !== '') {
       getUser(res, cookie, db);
     } else {
-      console.log('false')
       res.send({});
     }
   });
