@@ -13,7 +13,11 @@ const loginResponse = (status, message) => {
 function checkPassword(req, res, user, body) {
   bcrypt.hash(body.password, user.salt, function (err, hash) {
     if (hash === user.passwordHash) {
-      createSession(req, res, user._id);
+      const data = {
+        insertedId: user._id.toString(),
+      }
+      
+      createSession(req, res, data);
     } else {
       res.send(loginResponse(false, 'Incorrect password'));
     }

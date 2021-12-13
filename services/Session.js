@@ -14,6 +14,7 @@ export const createSession = (req, res, inserted) => {
   const uuid = uuidv4();
   req.session.uuid = uuid;
   req.session.userId = inserted.insertedId;
+
   req.session.save(err => {
     if (err) {
       res.send(sessionResponse(false, '', 'Error saving session.'));
