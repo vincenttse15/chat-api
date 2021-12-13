@@ -7,6 +7,7 @@ import session from 'express-session';
 import MongoStore from 'connect-mongo';
 import { getUser } from './services/User.js';
 import { logout } from './services/Logout.js';
+import { login } from './services/Login.js';
 
 dotenv.config();
 
@@ -49,6 +50,15 @@ client.connect((error) => {
     const { sessionId } = req.body;
 
     logout(res, sessionId, db);
+  });
+
+  app.post('/login', (req, res) => {
+    const body = {
+      email: req.body.email,
+      password: req.body.password,
+    }
+
+    login(req, res, db, body);
   });
 
   app.get('/getUser', (req, res) => {
