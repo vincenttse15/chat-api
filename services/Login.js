@@ -19,7 +19,7 @@ function checkPassword(req, res, user, body) {
       
       createSession(req, res, data);
     } else {
-      res.send(loginResponse(false, 'Incorrect password'));
+      res.send(loginResponse(false, 'Incorrect password and/or email.'));
     }
   })
 }
@@ -30,7 +30,7 @@ export const login = (req, res, db, body) => {
       if (user) {
         checkPassword(req, res, user, body);
       } else {
-        res.send(loginResponse(false, 'Email does not exist'));
+        res.send(loginResponse(false, 'Email does not exist.'));
       }
     }); 
 };
