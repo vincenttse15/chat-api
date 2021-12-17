@@ -1,1 +1,1 @@
-# chat-api
+# chat application's api code
