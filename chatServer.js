@@ -14,7 +14,6 @@ wss.on('connection', (ws, req) => {
   ws.on('close', () => {
     console.log('disconnected');
     users.delete(req.url.slice(1));
-    console.log(users);
   });
 });
 

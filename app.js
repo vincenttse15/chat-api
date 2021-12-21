@@ -8,6 +8,7 @@ import MongoStore from 'connect-mongo';
 import { getUser } from './services/User.js';
 import { logout } from './services/Logout.js';
 import { login } from './services/Login.js';
+import { sendFriendRequest } from './services/Friends.js';
 
 dotenv.config();
 
@@ -59,6 +60,15 @@ client.connect((error) => {
     }
 
     login(req, res, db, body);
+  });
+
+  app.post('/sendFriendRequest', (req, res) => {
+    const body = {
+      cookie: req.body.cookie,
+      email: req.body.email,
+    }
+
+    sendFriendRequest(res, body, db);
   });
 
   app.get('/getUser', (req, res) => {
