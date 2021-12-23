@@ -1,21 +1,28 @@
 import redis from "redis";
 import { WebSocketServer } from "ws";
 
-const redisHost = 'redis';
+export const redisHost = 'redis';
 const client = redis.createClient({ host: redisHost });
 
+(async () => {
+  await client.connect();
+})();
+
 const wss = new WebSocketServer({ port: 4004 });
-const users = new Map();
+export const usersMap = new Map();
 
 wss.on('connection', (ws, req) => {
   console.log('connected');
-  users.set(req.url.slice(1), ws);
+  usersMap.set(req.url.slice(1), ws);
 
   ws.on('close', () => {
     console.log('disconnected');
-    users.delete(req.url.slice(1));
+    usersMap.delete(req.url.slice(1));
   });
 });
 
-client.subscribe('notifications');
+await client.subscribe('notifications', (message) => {
+  console.log(message);
+});
+
 console.log('chat server online');
