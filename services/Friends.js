@@ -86,6 +86,7 @@ const publishRedisFriendRequest = (toId, fromEmail, db) => {
           const data = {
             to: session.session.uuid,
             from: fromEmail,
+            type: 'FRIEND_REQUEST',
           };
 
           (async () => {
