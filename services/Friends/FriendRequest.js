@@ -1,6 +1,6 @@
 import { ObjectId } from "bson";
 import redis from "redis";
-import { redisHost, usersMap } from "../chatServer.js";
+import { redisHost, usersMap } from "../../chatServer.js";
 
 const client = redis.createClient({ host: redisHost });
 
@@ -26,14 +26,14 @@ export const sendFriendRequest = (res, body, db) => {
                 .findOne({ _id: new ObjectId(session.session.userId) }, function (err, from) {
                   if (from) {
                     const friendRequest = {
-                      from: from._id.toString(),
-                      to: to._id.toString(),
+                      from: from.email,
+                      to: to.email,
                     };
 
                     // opposite from and to
                     const friendRequest2 = {
-                      from: to._id.toString(),
-                      to: from._id.toString(),
+                      from: to.email,
+                      to: from.email,
                     };
 
                     // check if friend request already exists
@@ -99,4 +99,40 @@ const publishRedisFriendRequest = (toId, fromEmail, db) => {
         console.log("user not connected.");
       }
     })
+};
+
+export const getRequests = (res, sessionId, db) => {
+  db.collection("sessions")
+  .findOne({"session.uuid": sessionId}, function(err, session) {
+    if(session) {
+      db.collection("users")
+        .findOne({_id: new ObjectId(session.session.userId)}, function(err, user) {
+          if (user) {
+            const query = {
+              to: user.email,
+            };
+
+            const projection = {
+              _id: 0,
+              from: 1,
+            };
+
+            db.collection("FriendRequests")
+              .find(query)
+              .project(projection)
+              .toArray()
+              .then((requests) => {
+                res.send(requests);
+              })
+              .catch(() => {
+                res.send({})
+              })
+          } else {
+            res.send({});
+          }
+        });
+    } else {
+      res.send({});
+    }
+  });
 };
