@@ -8,7 +8,7 @@ import MongoStore from 'connect-mongo';
 import { getUser } from './services/User.js';
 import { logout } from './services/Logout.js';
 import { login } from './services/Login.js';
-import { sendFriendRequest, getRequests } from './services/Friends/FriendRequest.js';
+import { sendFriendRequest, getRequests, acceptFriendRequest } from './services/Friends/FriendRequest.js';
 
 dotenv.config();
 
@@ -69,6 +69,15 @@ client.connect((error) => {
     }
 
     sendFriendRequest(res, body, db);
+  });
+
+  app.post('/acceptFriendRequest', (req, res) => {
+    const body = {
+      to: req.body.to,
+      from: req.body.from,
+    };
+
+    acceptFriendRequest(res, body, db);
   });
 
   app.get('/getUser', (req, res) => {

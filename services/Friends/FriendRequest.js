@@ -50,6 +50,7 @@ export const sendFriendRequest = (res, body, db) => {
                                 res.send(requestResponse(false, "This user has sent you a friend request already."));
                               } else {
 
+                                // TODO: check if they are friends already
                                 // send friend request
                                 db.collection("FriendRequests")
                                   .insertOne(friendRequest)
@@ -80,7 +81,7 @@ export const sendFriendRequest = (res, body, db) => {
 
 const publishRedisFriendRequest = (toId, fromEmail, db) => {
   db.collection("sessions")
-    .findOne({ "session.userId" : toId }, function(err, session) {
+    .findOne({ "session.userId": toId }, function (err, session) {
       if (session) {
         if (usersMap.has(session.session.uuid)) {
           const data = {
@@ -95,44 +96,138 @@ const publishRedisFriendRequest = (toId, fromEmail, db) => {
             await client.disconnect();
           })();
         }
-      } else {
-        console.log("user not connected.");
       }
     })
 };
 
 export const getRequests = (res, sessionId, db) => {
   db.collection("sessions")
-  .findOne({"session.uuid": sessionId}, function(err, session) {
-    if(session) {
-      db.collection("users")
-        .findOne({_id: new ObjectId(session.session.userId)}, function(err, user) {
-          if (user) {
-            const query = {
-              to: user.email,
-            };
+    .findOne({ "session.uuid": sessionId }, function (err, session) {
+      if (session) {
+        db.collection("users")
+          .findOne({ _id: new ObjectId(session.session.userId) }, function (err, user) {
+            if (user) {
+              const query = {
+                to: user.email,
+              };
 
+              const projection = {
+                _id: 0,
+                from: 1,
+              };
+
+              db.collection("FriendRequests")
+                .find(query)
+                .project(projection)
+                .toArray()
+                .then((requests) => {
+                  res.send(requests);
+                })
+                .catch(() => {
+                  res.send({})
+                })
+            } else {
+              res.send({});
+            }
+          });
+      } else {
+        res.send({});
+      }
+    });
+};
+
+export const acceptFriendRequest = (res, body, db) => {
+  const query = {
+    to: body.to,
+    from: body.from,
+  };
+
+  db.collection("FriendRequests")
+    .deleteOne(query, function (err, result) {
+      if (result.deletedCount === 1) {
+        const doc1 = {
+          owner: body.to,
+          friend: body.from,
+        };
+
+        const doc2 = {
+          owner: body.from,
+          friend: body.to,
+        };
+
+        db.collection("Friends")
+          .insertOne(doc1)
+          .then((inserted) => {
+            db.collection("Friends")
+              .insertOne(doc2)
+              .then((inserted) => {
+                publishRedisAcceptFriendRequest(body, db);
+                db.collection("users")
+                  .findOne({ email: body.from })
+                  .then((user) => {
+                    const data = {
+                      email: user.email,
+                      firstName: user.firstName,
+                      lastName: user.lastName,
+                      success: true,
+                    };
+
+                    res.send(data);
+                  })
+                  .catch(() => {
+                    res.send({ success: false });
+                  })
+              })
+              .catch(() => res.send({ success: false }));
+          })
+          .catch(() => res.send({ success: false }));
+      } else {
+        res.send({ success: false });
+      }
+    })
+};
+
+const publishRedisAcceptFriendRequest = (body, db) => {
+  db.collection("users")
+    .findOne({ email: body.from }, { sort: {}, projection: { _id: 1 } })
+    .then((user) => {
+      db.collection("sessions")
+        .findOne({ "session.userId": user._id.toString() })
+        .then((session) => {
+          if (usersMap.has(session.session.uuid)) {
             const projection = {
               _id: 0,
-              from: 1,
+              firstName: 1,
+              lastName: 1
             };
 
-            db.collection("FriendRequests")
-              .find(query)
-              .project(projection)
-              .toArray()
-              .then((requests) => {
-                res.send(requests);
+            db.collection("users")
+              .findOne({ email: body.to }, { sort: {}, projection: projection })
+              .then((newFriend) => {
+                const data = {
+                  to: session.session.uuid,
+                  firstName: newFriend.firstName,
+                  lastName: newFriend.lastName,
+                  email: body.to,
+                  type: "ADD_NEW_FRIEND",
+                };
+
+                (async () => {
+                  await client.connect();
+                  await client.publish('notifications', JSON.stringify(data));
+                  await client.disconnect();
+                })();
               })
               .catch(() => {
-                res.send({})
+                console.log("error user find");
               })
-          } else {
-            res.send({});
           }
-        });
-    } else {
-      res.send({});
-    }
-  });
+        })
+        .catch(() => {
+          console.log("error sesson find");
+        })
+    })
+    .catch(() => {
+      console.log("error user find");
+    });
 };
