@@ -8,7 +8,15 @@ import MongoStore from 'connect-mongo';
 import { getUser } from './services/User.js';
 import { logout } from './services/Logout.js';
 import { login } from './services/Login.js';
-import { sendFriendRequest, getRequests, acceptFriendRequest } from './services/Friends/FriendRequest.js';
+import {
+  sendFriendRequest,
+  getRequests, 
+  acceptFriendRequest, 
+  declineFriendRequest
+} from './services/Friends/FriendRequest.js';
+import {
+  getFriends,
+} from './services/Friends/FriendList.js';
 
 dotenv.config();
 
@@ -43,10 +51,10 @@ client.connect((error) => {
       email: req.body.email,
       password: req.body.password,
     };
-  
+
     signup(req, res, body, db);
   });
-  
+
   app.post('/logout', (req, res) => {
     const { sessionId } = req.body;
 
@@ -80,6 +88,15 @@ client.connect((error) => {
     acceptFriendRequest(res, body, db);
   });
 
+  app.post('/declineFriendRequest', (req, res) => {
+    const body = {
+      to: req.body.to,
+      from: req.body.from,
+    };
+
+    declineFriendRequest(res, body, db);
+  });
+
   app.get('/getUser', (req, res) => {
     const { cookie } = req.query;
     if (cookie !== undefined && cookie !== '') {
@@ -97,7 +114,16 @@ client.connect((error) => {
       res.send({});
     }
   });
-  
+
+  app.get('/getFriends', (req, res) => {
+    const { cookie } = req.query;
+    if (cookie !== undefined && cookie !== '') {
+      getFriends(res, cookie, db);
+    } else {
+      res.send({});
+    }
+  });
+
   app.listen(port, () => {
     console.log(`server start at port ${port}`);
   });

@@ -50,16 +50,24 @@ export const sendFriendRequest = (res, body, db) => {
                                 res.send(requestResponse(false, "This user has sent you a friend request already."));
                               } else {
 
-                                // TODO: check if they are friends already
-                                // send friend request
-                                db.collection("FriendRequests")
-                                  .insertOne(friendRequest)
-                                  .then((inserted) => {
-                                    publishRedisFriendRequest(to._id.toString(), from.email, db);
-                                    res.send(requestResponse(true, "Friend request sent."));
-                                  })
-                                  .catch(() => {
-                                    res.send(requestResponse(false, "Sorry, there was an error sending the friend request."));
+                                //check if they are friends already
+                                db.collection("Friends")
+                                  .findOne({ owner: from.email, friend: to.email }, function (err, friend) {
+                                    if (friend) {
+                                      res.send(requestResponse(false, "You are friends with this user."));
+                                    } else {
+
+                                      // send friend request
+                                      db.collection("FriendRequests")
+                                        .insertOne(friendRequest)
+                                        .then((inserted) => {
+                                          publishRedisFriendRequest(to._id.toString(), from.email, db);
+                                          res.send(requestResponse(true, "Friend request sent."));
+                                        })
+                                        .catch(() => {
+                                          res.send(requestResponse(false, "Sorry, there was an error sending the friend request."));
+                                        })
+                                    }
                                   })
                               }
                             })
@@ -231,3 +239,19 @@ const publishRedisAcceptFriendRequest = (body, db) => {
       console.log("error user find");
     });
 };
+
+export const declineFriendRequest = (res, body, db) => {
+  const query = {
+    to: body.to,
+    from: body.from,
+  };
+
+  db.collection("FriendRequests")
+    .deleteOne(query, function(err, result) {
+      if (result.deletedCount === 1) {
+        res.send({ success: true });
+      } else {
+        res.send({ success: false });
+      }
+    })
+}
