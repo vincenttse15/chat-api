@@ -48,3 +48,40 @@ export const getFriends = (res, sessionId, db) => {
       }
     });
 };
+
+export const removeFriend = (res, friend, owner, db) => {
+  const doc1 = {
+    owner: owner,
+    friend: friend
+  };
+
+  const doc2 = {
+    owner: friend,
+    friend: owner,
+  };
+
+  db.collection("Friends")
+    .deleteOne(doc1)
+    .then((deleteDoc1) => {
+      if (deleteDoc1.deletedCount === 1) {
+        db.collection("Friends")
+          .deleteOne(doc2)
+          .then((deleteDoc2) => {
+            if (deleteDoc2.deletedCount === 1) {
+              console.log("deleted both");
+              res.send({ success: true });
+            } else {
+              res.send({ success: false });
+            }
+          })
+          .catch(() => {
+            res.send({ success: false });
+          })
+      } else {
+        res.send({ success: false })
+      }
+    })
+    .catch(() => {
+      res.send({ success: false });
+    })
+};

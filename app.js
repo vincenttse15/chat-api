@@ -16,6 +16,7 @@ import {
 } from './services/Friends/FriendRequest.js';
 import {
   getFriends,
+  removeFriend,
 } from './services/Friends/FriendList.js';
 
 dotenv.config();
@@ -95,6 +96,16 @@ client.connect((error) => {
     };
 
     declineFriendRequest(res, body, db);
+  });
+
+  app.post('/removeFriend', (req, res) => {
+    const { cookie, friend, owner } = req.body;
+
+    if (cookie !== undefined && cookie !== '') {
+      removeFriend(res, friend, owner, db);
+    } else {
+      res.send({});
+    }
   });
 
   app.get('/getUser', (req, res) => {
